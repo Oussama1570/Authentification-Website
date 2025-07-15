@@ -1,0 +1,10 @@
+/* 🌀 Tailwind CSS core imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* 🎨 Optional: smooth dark/light transitions */
+html {
+  transition: background 0.3s, color 0.3s;
+}
