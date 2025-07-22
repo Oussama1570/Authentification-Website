@@ -120,3 +120,4 @@ export default App;
 
 // ✅ Useful if you're building a full dashboard with roles.
 
+// add gitignore to hide .env backend and frontend

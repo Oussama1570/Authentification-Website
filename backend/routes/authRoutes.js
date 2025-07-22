@@ -9,6 +9,8 @@ const {
   forgotPassword,
   resetPassword,
   changePassword,
+  refresh, // ✅ Add this
+  logout,  // ✅ Add this
 } = require("../controllers/authController");
 
 // ✅ Import auth middleware to protect private routes
@@ -28,6 +30,19 @@ router.post("/login", login);
 // @desc    Get logged in user info
 // @access  Private
 router.get("/me", authMiddleware, getMe);
+
+
+// ✅ Refresh access token using refresh token
+// @route   POST /api/auth/refresh
+// @access  Public (cookie required)
+router.post("/refresh", refresh);
+
+// ✅ Logout user and clear cookie
+// @route   POST /api/auth/logout
+// @access  Public (clears token cookie)
+router.post("/logout", logout);
+
+
 
 // @route   POST /api/auth/forgot-password
 // @desc    Send password reset link via email

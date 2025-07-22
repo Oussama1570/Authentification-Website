@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const cookieParser = require("cookie-parser");
 
 // 📧 Setup nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -42,29 +43,73 @@ const register = async (req, res) => {
   }
 };
 
-// ✅ Login
-const login = async (req, res) => {
-  const { email, password } = req.body;
 
+
+const getMe = async (req, res) => {
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ msg: "Invalid credentials" });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token, user: { id: user._id, email: user.email } });
+    res.json({ user: { id: user._id, email: user.email } });
   } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ msg: "Login failed" });
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
-// ✅ Get current authenticated user
-const getMe = async (req, res) => {
-  res.json({ user: req.user });
+
+
+// Add refresh token generation
+const generateTokens = (userId) => {
+  const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
+  return { accessToken, refreshToken };
 };
+
+// 🔐 Login Controller
+const login = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(400).json({ msg: "Invalid credentials" });
+  }
+
+  const { accessToken, refreshToken } = generateTokens(user._id);
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: false, // use true in production
+    sameSite: "Lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.json({ accessToken });
+};
+
+
+// Refresh token
+const refresh = (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token) return res.status(401).json({ msg: "No token" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    res.json({ accessToken });
+  } catch (err) {
+    res.status(403).json({ msg: "Invalid refresh token" });
+  }
+};
+
+// Logout: clear cookie
+const logout = (req, res) => {
+  res.clearCookie("refreshToken", { httpOnly: true, sameSite: "Strict", secure: process.env.NODE_ENV === "production" });
+  res.json({ msg: "Logged out" });
+};
+
+
+
+
 
 // ✅ Forgot password - send reset link via email
 
@@ -158,7 +203,7 @@ const changePassword = async (req, res) => {
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) return res.status(401).json({ msg: "Current password is incorrect" });
 
-    user.password = newPassword;
+    user.password = await bcrypt.hash(newPassword, 10); //
     await user.save();
 
     res.json({ msg: "Password changed successfully" });
@@ -172,10 +217,11 @@ const changePassword = async (req, res) => {
 module.exports = {
   register,
   login,
-  getMe,
+  logout,
+  refresh, 
   forgotPassword,
   resetPassword,
   changePassword,
+  getMe,
 };
-
 

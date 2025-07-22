@@ -1,14 +1,13 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
-// 🧠 Create global context
 const AuthContext = createContext(null);
 
-// 🔐 Provides auth state and actions
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
 
-  // 🔁 Fetch current user when token changes
+  // 🔁 Fetch user on token change
   useEffect(() => {
     if (!token) return;
 
@@ -17,19 +16,49 @@ export const AuthProvider = ({ children }) => {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.user) setUser(data.user);
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          console.error("❌ Failed to fetch user:", data.msg);
+        }
       })
-      .catch(() => setUser(null));
+      .catch((err) => {
+        console.error("❌ Failed to fetch user:", err.message);
+        setUser(null);
+      });
   }, [token]);
 
-  // ✅ Save token + trigger user fetch
+  // 🔁 Refresh token every 14 min
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.post(
+          "http://localhost:5000/api/auth/refresh",
+          {},
+          { withCredentials: true }
+        );
+        const newAccessToken = res.data.accessToken;
+        localStorage.setItem("token", newAccessToken);
+        setToken(newAccessToken);
+      } catch (err) {
+        console.error("🔁 Token refresh failed:", err.message);
+        setUser(null);
+        setToken(null);
+      }
+    }, 14 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Login
   const login = (token) => {
     localStorage.setItem("token", token);
     setToken(token);
   };
 
-  // 🔓 Clear session
-  const logout = () => {
+  // Logout
+  const logout = async () => {
+    await axios.post("http://localhost:5000/api/auth/logout", {}, { withCredentials: true });
     localStorage.removeItem("token");
     setUser(null);
     setToken(null);
@@ -42,5 +71,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// 📥 Easy access hook
 export const useAuth = () => useContext(AuthContext);

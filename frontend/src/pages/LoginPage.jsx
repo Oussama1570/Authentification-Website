@@ -21,13 +21,15 @@ const LoginPage = () => {
     setErrorMsg(null);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+  "http://localhost:5000/api/auth/login",
+  { email, password },
+  { withCredentials: true } // ✅ Accept secure cookie (refresh token)
+);
 
-      login(res.data.token); // Save token to context/localStorage
-    navigate("/dashboard"); // Redirect
+login(res.data.accessToken); // ✅ Save access token to context/localStorage
+navigate("/dashboard"); // ✅ Redirect to dashboard
+
   } catch (err) {
     console.error("Login error:", err); // ✅ Log full error in dev console
     setErrorMsg(err.response?.data?.msg || "Login failed"); // Show friendly error
