@@ -1,20 +1,41 @@
 // src/pages/ForgotPassword.jsx
 import React, { useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    // One toast that stays in place (no jump)
+    const toastId = toast.loading("Sending reset link...", {
+      position: "top-center",
+    });
+
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/forgot-password", {
-        email,
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/forgot-password",
+        { email },
+        { withCredentials: true }
+      );
+
+      toast.success(res?.data?.msg || "Reset link sent ✅", {
+        id: toastId,
+        position: "top-center",
+        duration: 2000,
       });
-      setMessage(res.data.msg);
     } catch (err) {
-      setMessage(err.response?.data?.msg || "Something went wrong");
+      const msg =
+        err?.response?.data?.msg ||
+        err?.response?.data?.message ||
+        "Something went wrong";
+      toast.error(msg, { id: toastId, position: "top-center" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,21 +53,17 @@ const ForgotPassword = () => {
         placeholder="Enter your email"
         className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
         onChange={(e) => setEmail(e.target.value)}
+        value={email}
         required
       />
 
       <button
         type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700"
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Send Reset Link
+        {loading ? "Sending..." : "Send Reset Link"}
       </button>
-
-      {message && (
-        <p className="text-sm text-center text-green-600 dark:text-green-400">
-          {message}
-        </p>
-      )}
     </form>
   );
 };

@@ -2,23 +2,46 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleReset = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    // one toast that keeps the same position
+    const toastId = toast.loading("Updating password...", {
+      position: "top-center",
+    });
+
     try {
-      const res = await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, {
-        password,
+      const res = await axios.post(
+        `http://localhost:5000/api/auth/reset-password/${token}`,
+        { password },
+        { withCredentials: true }
+      );
+
+      toast.success(res?.data?.msg || "Password reset successfully ✅", {
+        id: toastId,
+        position: "top-center",
+        duration: 1500,
       });
-      setMessage(res.data.msg);
-      setTimeout(() => navigate("/login"), 2000);
+
+      // show toast, then go to login
+      setTimeout(() => navigate("/login"), 200);
     } catch (err) {
-      setMessage(err.response?.data?.msg || "Reset failed");
+      const msg =
+        err?.response?.data?.msg ||
+        err?.response?.data?.message ||
+        "Reset failed";
+      toast.error(msg, { id: toastId, position: "top-center" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,21 +59,17 @@ const ResetPassword = () => {
         placeholder="New password"
         className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
         onChange={(e) => setPassword(e.target.value)}
+        value={password}
         required
       />
 
       <button
         type="submit"
-        className="bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700"
+        disabled={loading}
+        className="bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Set New Password
+        {loading ? "Saving..." : "Set New Password"}
       </button>
-
-      {message && (
-        <p className="text-sm text-center text-blue-600 dark:text-blue-400">
-          {message}
-        </p>
-      )}
     </form>
   );
 };

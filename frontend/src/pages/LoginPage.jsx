@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 
 const LoginPage = () => {
@@ -14,25 +15,52 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // 📤 Handle form submission
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setErrorMsg(null);
+  e.preventDefault();
+  setErrorMsg(null);
+  setLoading(true);
 
-    try {
-      const res = await axios.post(
-  "http://localhost:5000/api/auth/login",
-  { email, password },
-  { withCredentials: true } // ✅ Accept secure cookie (refresh token)
-);
+  // Show loading toast at top-center
+  const toastId = toast.loading("Signing you in...", { position: "top-center" });
 
-login(res.data.accessToken); // ✅ Save access token to context/localStorage
-navigate("/dashboard"); // ✅ Redirect to dashboard
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/auth/login",
+      { email, password },
+      { withCredentials: true }
+    );
 
+    login(res.data.accessToken);
+
+    // Update existing toast to success (same position)
+    toast.success("Welcome back! ✅", {
+      id: toastId,
+      position: "top-center",
+      duration: 1500,
+    });
+
+    // Wait a moment for toast to display before navigating
+    setTimeout(() => navigate("/dashboard"), 150);
   } catch (err) {
-    console.error("Login error:", err); // ✅ Log full error in dev console
-    setErrorMsg(err.response?.data?.msg || "Login failed"); // Show friendly error
+    console.error("Login error:", err);
+    setErrorMsg(
+      err?.response?.data?.msg ||
+        err?.response?.data?.message ||
+        "Login failed"
+    );
+
+    // Update existing toast to error (same position)
+    toast.error(
+      err?.response?.data?.msg ||
+        err?.response?.data?.message ||
+        "Login failed. Please try again.",
+      { id: toastId, position: "top-center" }
+    );
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -50,6 +78,7 @@ navigate("/dashboard"); // ✅ Redirect to dashboard
         placeholder="Email"
         className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
         onChange={(e) => setEmail(e.target.value)}
+        value={email}
         required
       />
 
@@ -58,6 +87,7 @@ navigate("/dashboard"); // ✅ Redirect to dashboard
         placeholder="Password"
         className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
         onChange={(e) => setPassword(e.target.value)}
+        value={password}
         required
       />
 
@@ -67,9 +97,10 @@ navigate("/dashboard"); // ✅ Redirect to dashboard
 
       <button
         type="submit"
-        className="bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700"
+        disabled={loading}
+        className={`bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed`}
       >
-        Login
+        {loading ? "Signing in..." : "Login"}
       </button>
 
       <div className="text-right">
@@ -85,4 +116,3 @@ navigate("/dashboard"); // ✅ Redirect to dashboard
 };
 
 export default LoginPage;
-

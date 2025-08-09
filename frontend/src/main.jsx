@@ -1,15 +1,29 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { AuthProvider } from "./context/AuthContext"; // 🔐 Global auth provider
-import './index.css'; // 🎨 Tailwind styles
+import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "react-hot-toast";
+import "./index.css";
 
-// 🔁 Mount root app
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {/* ✅ Wrap all components with global AuthContext */}
     <AuthProvider>
       <App />
+
+      {/* Global toast host */}
+      <Toaster
+  position="top-center"
+  gutter={8}
+  containerStyle={{ zIndex: 999999 }}   // <— very high
+  toastOptions={{
+    duration: 3000,
+    style: { borderRadius: "10px", padding: "10px 12px" },
+    success: { duration: 2000 },
+    error: { duration: 4000 },
+  }}
+/>
+
     </AuthProvider>
   </React.StrictMode>
 );
+

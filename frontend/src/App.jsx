@@ -1,60 +1,73 @@
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-// 📄 Page components
-import RegisterPage from "./pages/RegisterPage";
-import LoginPage from "./pages/LoginPage";
-import Dashboard from "./pages/Dashboard";
-import HomePage from "./pages/HomePage";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import ChangePassword from "./pages/ChangePassword"; // ✅ NEW
-
-// 🔒 Protected route wrapper
-import ProtectedRoute from "./components/ProtectedRoute";
-
-// 📌 Navbar (always visible)
 import Navbar from "./components/Navbar";
+import RouteChangeSpinner from "./components/RouteChangeSpinner";
+import PageLoader from "./components/PageLoader";
+
+// Lazy load pages for better performance
+const HomePage = lazy(() => import("./pages/HomePage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
+const Profile = lazy(() => import("./components/Profile")); // ✅ Added
+const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 
 const App = () => {
   return (
     <BrowserRouter>
-      {/* 🔝 Always show Navbar */}
+      {/* Navbar is always visible */}
       <Navbar />
 
-      {/* 📍 App Routes */}
-      <Routes>
-        {/* 🏠 Public Pages */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+      {/* Smooth spinner when changing routes */}
+      <RouteChangeSpinner />
 
-        {/* 🔐 Protected Pages */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+      {/* Suspense fallback for lazy loading */}
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        {/* 🔑 Change Password (Private) */}
-        <Route
-          path="/change-password"
-          element={
-            <ProtectedRoute>
-              <ChangePassword />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+          {/* Private Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePassword />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile" // ✅ New profile route
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };
 
 export default App;
+
+
 
 
 
