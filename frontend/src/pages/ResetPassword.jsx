@@ -14,7 +14,6 @@ const ResetPassword = () => {
     e.preventDefault();
     setLoading(true);
 
-    // one toast that keeps the same position
     const toastId = toast.loading("Updating password...", {
       position: "top-center",
     });
@@ -32,7 +31,6 @@ const ResetPassword = () => {
         duration: 1500,
       });
 
-      // show toast, then go to login
       setTimeout(() => navigate("/login"), 200);
     } catch (err) {
       const msg =
@@ -46,31 +44,53 @@ const ResetPassword = () => {
   };
 
   return (
-    <form
-      onSubmit={handleReset}
-      className="max-w-md mx-auto mt-10 p-6 space-y-4 bg-white dark:bg-gray-800 shadow-md rounded"
-    >
-      <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white">
-        🔑 Reset Your Password
-      </h2>
+    <div className="container py-5">
+      <div className="row justify-content-center">
+        <div className="col-12 col-md-8 col-lg-5">
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+              <h1 className="h4 text-center mb-4">🔑 Reset Your Password</h1>
 
-      <input
-        type="password"
-        placeholder="New password"
-        className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
-        onChange={(e) => setPassword(e.target.value)}
-        value={password}
-        required
-      />
+              <form onSubmit={handleReset} noValidate>
+                <div className="form-floating mb-3">
+                  <input
+                    id="newPassword"
+                    type="password"
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                    disabled={loading}
+                  />
+                  <label htmlFor="newPassword">New password</label>
+                </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {loading ? "Saving..." : "Set New Password"}
-      </button>
-    </form>
+                <button type="submit" className="btn btn-success w-100" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Saving...
+                    </>
+                  ) : (
+                    "Set New Password"
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <p className="text-center mt-3 small text-muted">
+            You’ll be redirected to the login page after a successful reset.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 

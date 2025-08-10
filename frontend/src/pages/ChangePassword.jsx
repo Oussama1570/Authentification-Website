@@ -1,3 +1,4 @@
+// src/pages/ChangePassword.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -26,17 +27,16 @@ const ChangePassword = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success(res.data.msg || "Password changed successfully ✅", {
+      toast.success(res.data?.msg || "Password changed successfully ✅", {
         id: toastId,
         position: "top-center",
         duration: 1500,
       });
 
-      // Small delay to show toast before redirecting
       setTimeout(() => navigate("/dashboard"), 200);
     } catch (err) {
       toast.error(
-        err?.response?.data?.msg || "Error changing password",
+        err?.response?.data?.msg || err?.response?.data?.message || "Error changing password",
         { id: toastId, position: "top-center" }
       );
     } finally {
@@ -45,39 +45,72 @@ const ChangePassword = () => {
   };
 
   return (
-    <form
-      onSubmit={handleChange}
-      className="max-w-md mx-auto mt-10 space-y-4 bg-white dark:bg-gray-800 p-6 shadow-md rounded"
-    >
-      <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white">
-        Change Password
-      </h2>
+    <div className="container py-5">
+      <div className="row justify-content-center">
+        <div className="col-12 col-md-8 col-lg-5">
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+              <h1 className="h4 text-center mb-4">Change Password</h1>
 
-      <input
-        type="password"
-        placeholder="Current password"
-        onChange={(e) => setCurrentPassword(e.target.value)}
-        value={currentPassword}
-        className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
-        required
-      />
+              <form onSubmit={handleChange} noValidate>
+                <div className="form-floating mb-3">
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    className="form-control"
+                    placeholder="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    disabled={loading}
+                  />
+                  <label htmlFor="currentPassword">Current password</label>
+                </div>
 
-      <input
-        type="password"
-        placeholder="New password"
-        onChange={(e) => setNewPassword(e.target.value)}
-        value={newPassword}
-        className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
-        required
-      />
+                <div className="form-floating mb-2">
+                  <input
+                    id="newPassword"
+                    type="password"
+                    className="form-control"
+                    placeholder="New password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                    disabled={loading}
+                  />
+                  <label htmlFor="newPassword">New password</label>
+                </div>
 
-      <button
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
-        disabled={loading}
-      >
-        {loading ? "Updating..." : "Change Password"}
-      </button>
-    </form>
+                <div className="form-text mb-3">
+                  Use at least 8 characters and avoid common words.
+                </div>
+
+                <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Updating...
+                    </>
+                  ) : (
+                    "Change Password"
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <p className="text-center mt-3 small text-muted">
+            Pro tip: Use a unique passphrase you don’t use anywhere else.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 

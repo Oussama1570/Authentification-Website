@@ -5,113 +5,124 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 
 const LoginPage = () => {
-  const auth = useAuth(); // 🔐 Access auth context
+  const auth = useAuth();
   const navigate = useNavigate();
-
   if (!auth) return null;
 
-  const { login } = auth;
+  const { login, setUser } = auth;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 📤 Handle form submission
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setErrorMsg(null);
-  setLoading(true);
+    e.preventDefault();
+    setErrorMsg(null);
+    setLoading(true);
+    const toastId = toast.loading("Signing you in...", { position: "top-center" });
 
-  // Show loading toast at top-center
-  const toastId = toast.loading("Signing you in...", { position: "top-center" });
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        { email, password },
+        { withCredentials: true }
+      );
 
-  try {
-    const res = await axios.post(
-      "http://localhost:5000/api/auth/login",
-      { email, password },
-      { withCredentials: true }
-    );
+      login(res.data.accessToken);
+      if (res.data.user) setUser(res.data.user);
 
-    login(res.data.accessToken);
-
-    // Update existing toast to success (same position)
-    toast.success("Welcome back! ✅", {
-      id: toastId,
-      position: "top-center",
-      duration: 1500,
-    });
-
-    // Wait a moment for toast to display before navigating
-    setTimeout(() => navigate("/dashboard"), 150);
-  } catch (err) {
-    console.error("Login error:", err);
-    setErrorMsg(
-      err?.response?.data?.msg ||
-        err?.response?.data?.message ||
-        "Login failed"
-    );
-
-    // Update existing toast to error (same position)
-    toast.error(
-      err?.response?.data?.msg ||
-        err?.response?.data?.message ||
-        "Login failed. Please try again.",
-      { id: toastId, position: "top-center" }
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.success("Welcome back! ✅", { id: toastId, position: "top-center", duration: 1500 });
+      setTimeout(() => navigate("/dashboard"), 150);
+    } catch (err) {
+      const msg = err?.response?.data?.msg || err?.response?.data?.message || "Login failed";
+      setErrorMsg(msg);
+      toast.error(msg, { id: toastId, position: "top-center" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <form
-      onSubmit={handleLogin}
-      className="max-w-md mx-auto mt-10 space-y-5 bg-white dark:bg-gray-800 p-6 shadow-md rounded"
-    >
-      <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white">
-        🔐 Login to Your Account
-      </h2>
+    <div className="container py-5">
+      <div className="row justify-content-center">
+        <div className="col-12 col-md-8 col-lg-5">
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+              <h1 className="h4 text-center mb-4">🔐 Login to Your Account</h1>
 
-      <input
-        type="email"
-        placeholder="Email"
-        className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
-        onChange={(e) => setEmail(e.target.value)}
-        value={email}
-        required
-      />
+              {errorMsg && (
+                <div className="alert alert-danger py-2 small" role="alert">
+                  {errorMsg}
+                </div>
+              )}
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2 w-full rounded dark:bg-gray-700 dark:text-white"
-        onChange={(e) => setPassword(e.target.value)}
-        value={password}
-        required
-      />
+              <form onSubmit={handleLogin} noValidate>
+                <div className="form-floating mb-3">
+                  <input
+                    id="email"
+                    type="email"
+                    className="form-control"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    required
+                  />
+                  <label htmlFor="email">Email address</label>
+                </div>
 
-      {errorMsg && (
-        <p className="text-sm text-red-600 text-center">{errorMsg}</p>
-      )}
+                <div className="form-floating mb-3">
+                  <input
+                    id="password"
+                    type="password"
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                  <label htmlFor="password">Password</label>
+                </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className={`bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed`}
-      >
-        {loading ? "Signing in..." : "Login"}
-      </button>
+                <div className="d-flex justify-content-end mb-3">
+                  <Link to="/forgot-password" className="small text-decoration-none">
+                    Forgot your password?
+                  </Link>
+                </div>
 
-      <div className="text-right">
-        <Link
-          to="/forgot-password"
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Forgot your password?
-        </Link>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-success w-100"
+                >
+                  {loading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Login"
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <p className="text-center mt-3 small text-muted">
+            Don’t have an account?{" "}
+            <Link to="/register" className="text-decoration-none">
+              Register
+            </Link>
+          </p>
+        </div>
       </div>
-    </form>
+    </div>
   );
 };
 

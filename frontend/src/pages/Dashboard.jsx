@@ -1,4 +1,5 @@
-import React from "react";
+// src/pages/Dashboard.jsx
+import React, { useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -6,12 +7,22 @@ import toast from "react-hot-toast";
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const avatarUrl = useMemo(() => {
+    if (user?.avatarUrl) return user.avatarUrl;
+    const name = user?.name || user?.email || "U";
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      name
+    )}&background=0D6EFD&color=fff`;
+  }, [user]);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     const toastId = toast.loading("Logging out...", { position: "top-center" });
 
     try {
-      // If logout is async (e.g., server call), await it; if not, this is fine too.
       const maybePromise = logout();
       if (maybePromise?.then) await maybePromise;
 
@@ -20,43 +31,89 @@ const Dashboard = () => {
         position: "top-center",
         duration: 1500,
       });
-
-      // Small delay so users see the toast before redirect
       setTimeout(() => navigate("/"), 150);
-    } catch (err) {
+    } catch {
       toast.error("Logout failed. Please try again.", {
         id: toastId,
         position: "top-center",
       });
+    } finally {
+      setLoggingOut(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white dark:bg-gray-800 rounded shadow text-center">
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
-        👋 Welcome to your Dashboard!
-      </h1>
+    <div className="container py-5">
+      <div className="row justify-content-center">
+        <div className="col-12 col-md-10 col-lg-7">
+          <div className="card shadow-sm">
+            <div className="card-body p-4 text-center">
+              <h1 className="h4 mb-3">👋 Welcome to your Dashboard!</h1>
 
-      {user && (
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
-          Logged in as: <span className="font-medium">{user.email}</span>
-        </p>
-      )}
+              {user && (
+                <>
+                  {/* Centered avatar */}
+                  <div className="d-flex justify-content-center mb-3">
+                    <img
+                      src={avatarUrl}
+                      alt="avatar"
+                      width="96"
+                      height="96"
+                      className="rounded-circle border d-block"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
 
-      <div className="flex flex-col gap-4 items-center mt-6">
-        <button
-          onClick={() => navigate("/change-password")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded transition"
-        >
-          🔑 Change Password
-        </button>
+                  <p className="text-muted mb-4">
+                    Logged in as <span className="fw-semibold">{user.email}</span>
+                  </p>
+                </>
+              )}
 
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded transition"
-        >
-          🚪 Logout
-        </button>
+              <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <button
+                  type="button"
+                  onClick={() => navigate("/profile")}
+                  className="btn btn-outline-primary"
+                >
+                  👤 Profile
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/change-password")}
+                  className="btn btn-primary"
+                >
+                  🔑 Change Password
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="btn btn-outline-danger"
+                  disabled={loggingOut}
+                >
+                  {loggingOut ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Logging out...
+                    </>
+                  ) : (
+                    "🚪 Logout"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center small text-muted mt-3">
+            Tip: You can update your avatar on the Profile page.
+          </p>
+        </div>
       </div>
     </div>
   );

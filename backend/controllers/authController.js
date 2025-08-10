@@ -36,7 +36,15 @@ const register = async (req, res) => {
     const user = await User.create({ email, password: hashed });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.status(201).json({ token, user: { id: user._id, email: user.email } });
+
+    res.status(201).json({
+      token, // (you can also rename to accessToken for consistency)
+      user: {
+        id: user._id,
+        email: user.email,
+        avatarUrl: user.avatarUrl || "",
+      },
+    });
   } catch (err) {
     console.error("Registration error:", err);
     res.status(500).json({ msg: "Registration failed" });
@@ -45,16 +53,24 @@ const register = async (req, res) => {
 
 
 
+
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    res.json({ user: { id: user._id, email: user.email } });
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        avatarUrl: user.avatarUrl || "",       // ✅ include avatar
+      },
+    });
   } catch (err) {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
 
 
 
@@ -78,13 +94,22 @@ const login = async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: false, // use true in production
+    secure: false, // set true in production
     sameSite: "Lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  res.json({ accessToken });
+  // ✅ include avatar so the header/profile can render it right after login
+  res.json({
+    accessToken,
+    user: {
+      id: user._id,
+      email: user.email,
+      avatarUrl: user.avatarUrl || "",
+    },
+  });
 };
+
 
 
 // Refresh token
